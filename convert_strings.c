@@ -11,7 +11,7 @@ unsigned int convert_R(va_list args, buffer_t *output,
 
 /**
  * convert_s - Converts an argument to a string and
- *             stores it to a buffer contained in a struct.
+ *             stores it to the buffer contained in the struct.
  * @args: A va_list pointing to the argument to be converted.
  * @flags: Flag modifiers.
  * @wid: A width modifier.
