@@ -2,79 +2,66 @@
 #include <stdarg.h>
 #include "main.h"
 
-// Function to perform cleanup after _printf
-void performCleanup(va_list arguments, buffer_t *output);
+void display_output(char buffer[], int *buff_ind);
 
-// Process and print formatted output
-int processFormattedString(const char *format, va_list arguments, buffer_t *output);
-
-// Custom printf function
-int customPrintf(const char *format, ...);
-
-void performCleanup(va_list arguments, buffer_t *output)
+/**
+ * custom_printf - Custom printf function
+ * @format: format string
+ * Return: Number of characters printed
+ */
+int custom_printf(const char *format, ...)
 {
-    // Implementation of cleanup
-    va_end(arguments);
-    write(1, output->start, output->len);
-    free_buffer(output);
-}
-
-int processFormattedString(const char *format, va_list arguments, buffer_t *output)
-{
-    // Implementation of processFormattedString
-    int index, width, precision, result = 0;
-    char temp;
-    unsigned char flags, length;
-    unsigned int (*specifierHandler)(va_list, buffer_t *, unsigned char, int, int, unsigned char);
-
-    for (index = 0; *(format + index); index++)
-    {
-        length = 0;
-        if (*(format + index) == '%')
-        {
-            temp = 0;
-            flags = handle_flags(format + index + 1, &temp);
-            width = handle_width(arguments, format + index + temp + 1, &temp);
-            precision = handle_precision(arguments, format + index + temp + 1, &temp);
-            length = handle_length(format + index + temp + 1, &temp);
-
-            specifierHandler = handle_specifiers(format + index + temp + 1);
-            if (specifierHandler != NULL)
-            {
-                index += temp + 1;
-                result += specifierHandler(arguments, output, flags, width, precision, length);
-                continue;
-            }
-            else if (*(format + index + temp + 1) == '\0')
-            {
-                result = -1;
-                break;
-            }
-        }
-        result += _memcpy(output, (format + index), 1);
-        index += (length != 0) ? 1 : 0;
-    }
-    performCleanup(arguments, output);
-    return result;
-}
-
-int customPrintf(const char *format, ...)
-{
-    buffer_t *outputBuffer;
-    va_list argumentList;
-    int returnValue;
+    int i, printed = 0, printed_chars = 0;
+    int flags, width, precision, size, buff_ind = 0;
+    va_list args;
+    char buffer[BUFFER_SIZE];
 
     if (format == NULL)
-        return -1;
+        return (-1);
 
-    outputBuffer = init_buffer();
-    if (outputBuffer == NULL)
-        return -1;
+    va_start(args, format);
 
-    va_start(argumentList, format);
+    for (i = 0; format && format[i] != '\0'; i++)
+    {
+        if (format[i] != '%')
+        {
+            buffer[buff_ind++] = format[i];
+            if (buff_ind == BUFFER_SIZE)
+                display_output(buffer, &buff_ind);
+            printed_chars++;
+        }
+        else
+        {
+            display_output(buffer, &buff_ind);
+            flags = get_flags(format, &i);
+            width = get_width(format, &i, args);
+            precision = get_precision(format, &i, args);
+            size = get_size(format, &i);
+            ++i;
+            printed = process_format(format, &i, args, buffer, flags, width, precision, size);
+            if (printed == -1)
+                return (-1);
+            printed_chars += printed;
+        }
+    }
 
-    returnValue = processFormattedString(format, argumentList, outputBuffer);
+    display_output(buffer, &buff_ind);
 
-    return returnValue;
+    va_end(args);
+
+    return (printed_chars);
+}
+
+/**
+ * display_output - Prints the contents of the buffer if it exists
+ * @buffer: Array of characters
+ * @buff_ind: Index at which to add the next character, representing the length
+ */
+void display_output(char buffer[], int *buff_ind)
+{
+    if (*buff_ind > 0)
+        write(1, &buffer[0], *buff_ind);
+
+    *buff_ind = 0;
 }
 
